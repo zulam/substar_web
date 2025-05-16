@@ -42,11 +42,10 @@ function App() {
 
   return (
     <div style={{ paddingBottom: '80px', textAlign: 'center' }}>
-      <h1 style={{ textAlign: 'center' }}>Substitution Tracker</h1>
       {players.map((player, index) => (
-        <div key={index} style={{ borderBottom: '1px solid #ccc', padding: '10px 20px' }}>
-          <h2 style={{ margin: '0px' }}>{player.firstName} {player.lastName}</h2>
-          <p>Subs: {player.subs}, Goalie Subs: {player.goalieSubs}</p>
+        <div key={index} style={{ borderBottom: '1px solid #ccc', padding: '6px 10px' }}>
+          <h2 style={{ margin: '0 0 2px 0', fontSize: '1.3rem'}}>{player.firstName} {player.lastName}</h2>
+          <p style={{ margin: '0 0 4px 0', fontSize: '0.95rem' }}>Subs: {player.subs}, Goalie Subs: {player.goalieSubs}</p>
           <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
             <button onClick={() => {
               const newPlayers = [...players];
