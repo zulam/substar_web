@@ -28,18 +28,36 @@ function App() {
       setPlayerCount(activePlayers.length);
     }
 
+    // 1. Determine the goalie as before
     var goalieSubs = Math.min(...activePlayers.map(p => p.goalieSubs));
     const eligibleGoalies = activePlayers.filter(p => p.goalieSubs === goalieSubs && !p.inGoal);
     const goalie = eligibleGoalies[Math.floor(Math.random() * eligibleGoalies.length)];
 
+    // 2. Add players currently on the bench (not inField, not inGoal, not the goalie)
+    const benchPlayers = activePlayers.filter(
+      p => !p.inField && !p.inGoal && p !== goalie
+    );
+
+    // 3. Fill remaining spots with lowest subs, excluding goalie and already added bench players
     var minSubs = Math.min(...activePlayers.map(p => p.subs));
     var shuffledPlayers = [...activePlayers].sort(() => Math.random() - 0.5);
-    const eligiblePlayers = shuffledPlayers.filter(p => p !== goalie && p.subs === minSubs);
-    while (eligiblePlayers.length < playerCount - 1) {
+    let eligiblePlayers = shuffledPlayers.filter(
+      p => p !== goalie && !benchPlayers.includes(p) && p.subs === minSubs
+    );
+
+    // Add more players if needed
+    while (benchPlayers.length + eligiblePlayers.length < playerCount - 1) {
       ++minSubs;
-      eligiblePlayers.push(...shuffledPlayers.filter(p => p !== goalie && p.subs === minSubs));
+      eligiblePlayers.push(
+        ...shuffledPlayers.filter(
+          p => p !== goalie && !benchPlayers.includes(p) && p.subs === minSubs && !eligiblePlayers.includes(p)
+        )
+      );
     }
-    const subs = eligiblePlayers.slice(0, playerCount - 1);
+
+    // 4. Combine bench players and eligible players, then slice to required count
+    const subs = [...benchPlayers, ...eligiblePlayers].slice(0, playerCount - 1);
+
     setSuggestedLineup({ goalie, subs });
     setSuggestModalVisible(true);
   };
@@ -167,7 +185,7 @@ function App() {
             <h2>Suggested Lineup</h2>
             <p>Goalie: {suggestedLineup.goalie?.firstName} {suggestedLineup.goalie?.lastName} [{suggestedLineup.goalie?.subs + suggestedLineup.goalie?.goalieSubs}]</p>
             {suggestedLineup.subs.map((sub, i) => (
-              <p key={i}>Sub: {sub.firstName} {sub.lastName} [{sub.subs + sub.goalieSubs}]</p>
+              <p key={i}>{sub.firstName} {sub.lastName} [{sub.subs + sub.goalieSubs}]</p>
             ))}
             <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
               <button onClick={() => setSuggestModalVisible(false)} style={redButtonStyle}>Decline</button>
