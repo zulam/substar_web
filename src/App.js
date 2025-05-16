@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 
 function App() {
-  const [players, setPlayers] = useState([
+  const origPlayers = [
     { firstName: 'Ben', lastName: '', isActive: true, inField: false, inGoal: false, subs: 0, goalieSubs: 0 },
     { firstName: 'Finn', lastName: '', isActive: true, inField: false, inGoal: false, subs: 0, goalieSubs: 0 },
     { firstName: 'Penny', lastName: '', isActive: true, inField: false, inGoal: false, subs: 0, goalieSubs: 0 },
@@ -10,12 +10,17 @@ function App() {
     { firstName: 'Sterling', lastName: '', isActive: true, inField: false, inGoal: false, subs: 0, goalieSubs: 0 },
     { firstName: 'Casey', lastName: '', isActive: true, inField: false, inGoal: false, subs: 0, goalieSubs: 0 },
     { firstName: 'Kinley', lastName: '', isActive: true, inField: false, inGoal: false, subs: 0, goalieSubs: 0 }
-  ]);
+  ]
 
+  const [players, setPlayers] = useState([...origPlayers]);
   const [playerCount, setPlayerCount] = useState(5);
   const [suggestModalVisible, setSuggestModalVisible] = useState(false);
   const [resetModalVisible, setResetModalVisible] = useState(false);
   const [suggestedLineup, setSuggestedLineup] = useState({ goalie: null, subs: [] });
+
+  const [deactivationModalVisible, setDeactivationModalVisible] = useState(false);
+  const [playerToDeactivate, setPlayerToDeactivate] = useState(null);
+  const [replacementPlayer, setReplacementPlayer] = useState(null);
 
   const handleSuggestLineup = () => {
     const activePlayers = players.filter(p => p.isActive);
@@ -57,6 +62,15 @@ function App() {
     setSuggestModalVisible(false);
   };
 
+  const suggestReplacement = (player, players, playerCount) => {
+    const inactivePlayers = players.filter(p => p.isActive && !p.inField && !p.inGoal && p !== player);
+    if (inactivePlayers.length === 0) return null;
+
+    const minTotal = Math.min(...inactivePlayers.map(p => p.subs + p.goalieSubs));
+    const eligible = inactivePlayers.filter(p => (p.subs + p.goalieSubs) === minTotal);
+    return eligible[Math.floor(Math.random() * eligible.length)];
+  };
+
   return (
     <div style={{ paddingBottom: '80px', textAlign: 'center' }}>
       {[...players].sort((a, b) => (a.isActive === b.isActive) ? 0 : a.isActive ? -1 : 1).map((player, index) => (
@@ -70,10 +84,18 @@ function App() {
                 type="checkbox"
                 checked={player.isActive}
                 onChange={e => {
-                  const newPlayers = [...players];
-                  const realIndex = players.findIndex(p => p.firstName === player.firstName && p.lastName === player.lastName);
-                  newPlayers[realIndex].isActive = !!e.target.checked;
-                  setPlayers(newPlayers);
+                  const isChecked = !!e.target.checked;
+                  if (!isChecked && (player.inField || player.inGoal)) {
+                    const replacement = suggestReplacement(player, players, playerCount);
+                    setPlayerToDeactivate(player);
+                    setReplacementPlayer(replacement);
+                    setDeactivationModalVisible(true);
+                  } else {
+                    const newPlayers = [...players];
+                    const realIndex = players.findIndex(p => p.firstName === player.firstName && p.lastName === player.lastName);
+                    newPlayers[realIndex].isActive = isChecked;
+                    setPlayers(newPlayers);
+                  }
                 }}
               />
               Active
@@ -82,33 +104,35 @@ function App() {
           <p style={{ margin: '0 0 4px 0', fontSize: '0.95rem' }}>
             Subs: {player.subs} | Goalie Subs: {player.goalieSubs} | Total: {player.subs + player.goalieSubs}
           </p>
-          <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
-            <button onClick={() => {
-              const newPlayers = [...players];
-              if (newPlayers[index].subs > 0) newPlayers[index].subs -= 1;
-              setPlayers(newPlayers);
-            }} style={redButtonStyle}>- Sub</button>
-            <button
-              onClick={() => {
+          {false &&
+            <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
+              <button onClick={() => {
                 const newPlayers = [...players];
-                newPlayers[index].subs += 1;
+                if (newPlayers[index].subs > 0) newPlayers[index].subs -= 1;
+                setPlayers(newPlayers);
+              }} style={redButtonStyle}>- Sub</button>
+              <button
+                onClick={() => {
+                  const newPlayers = [...players];
+                  newPlayers[index].subs += 1;
+                  setPlayers(newPlayers);
+                }}
+                style={buttonStyle}>
+                + Sub
+              </button>
+              <button onClick={() => {
+                const newPlayers = [...players];
+                if (newPlayers[index].goalieSubs > 0) newPlayers[index].goalieSubs -= 1;
+                setPlayers(newPlayers);
+              }} style={redButtonStyle}>- Goalie</button>
+              <button onClick={() => {
+                const newPlayers = [...players];
+                newPlayers[index].goalieSubs += 1;
                 setPlayers(newPlayers);
               }}
-              style={buttonStyle}>
-              + Sub
-            </button>
-            <button onClick={() => {
-              const newPlayers = [...players];
-              if (newPlayers[index].goalieSubs > 0) newPlayers[index].goalieSubs -= 1;
-              setPlayers(newPlayers);
-            }} style={redButtonStyle}>- Goalie</button>
-            <button onClick={() => {
-              const newPlayers = [...players];
-              newPlayers[index].goalieSubs += 1;
-              setPlayers(newPlayers);
-            }}
-              style={buttonStyle}>+ Goalie</button>
-          </div>
+                style={buttonStyle}>+ Goalie</button>
+            </div>
+          }
         </div>
       ))}
 
@@ -161,11 +185,8 @@ function App() {
             <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
               <button onClick={() => setResetModalVisible(false)} style={redButtonStyle}>Cancel</button>
               <button onClick={() => {
-                setPlayers(players.map(p => ({
-                  ...p,
-                  subs: 0,
-                  goalieSubs: 0
-                })));
+                setPlayers([...origPlayers]);
+                setPlayerCount(5);
                 setResetModalVisible(false);
               }}
                 style={buttonStyle}>Confirm</button>
@@ -173,6 +194,48 @@ function App() {
           </div>
         </div>
       )}
+
+      {deactivationModalVisible && (
+        <div style={modalOverlayStyle}>
+          <div style={modalContentStyle}>
+            <h2>Confirm Deactivation</h2>
+            <p>
+              Deactivate <strong>{playerToDeactivate?.firstName}</strong> and sub in <strong>{replacementPlayer?.firstName}</strong>?
+            </p>
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
+              <button onClick={() => setDeactivationModalVisible(false)} style={redButtonStyle}>Cancel</button>
+              <button onClick={() => {
+                const newPlayers = [...players];
+                const deactivateIdx = players.findIndex(p => p === playerToDeactivate);
+                const replacementIdx = players.findIndex(p => p === replacementPlayer);
+
+                if (replacementIdx >= 0) {
+                  if (playerToDeactivate.inField) {
+                    newPlayers[replacementIdx].inField = true;
+                    newPlayers[replacementIdx].subs += 1;
+                  }
+                  else if (playerToDeactivate.inGoal) {
+                    newPlayers[replacementIdx].inGoal = true;
+                    newPlayers[replacementIdx].goalieSubs += 1;
+                  }
+                }
+
+                if (deactivateIdx >= 0) {
+                  newPlayers[deactivateIdx].isActive = false;
+                  newPlayers[deactivateIdx].inField = false;
+                  newPlayers[deactivateIdx].inGoal = false;
+                }
+
+                setPlayers(newPlayers);
+                setDeactivationModalVisible(false);
+                setPlayerToDeactivate(null);
+                setReplacementPlayer(null);
+              }} style={buttonStyle}>Confirm</button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
