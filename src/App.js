@@ -12,20 +12,27 @@ function App() {
     { firstName: 'Kinley', lastName: '', subs: 0, goalieSubs: 0 }
   ]);
 
-  const [modalVisible, setModalVisible] = useState(false);
+  const [suggestModalVisible, setSuggestModalVisible] = useState(false);
   const [resetModalVisible, setResetModalVisible] = useState(false);
   const [suggestedLineup, setSuggestedLineup] = useState({ goalie: null, subs: [] });
-  const [lastGoalieIndex, setLastGoalieIndex] = useState(-1);
+  const [lastGoalie, setLastGoalie] = useState();
 
   const handleSuggestLineup = () => {
-    const nextGoalieIndex = (lastGoalieIndex + 1) % players.length;
-    const goalie = players[nextGoalieIndex];
-    const minSubs = Math.min(...players.map(p => p.subs));
-    const eligiblePlayers = players.filter((p, i) => i !== nextGoalieIndex && p.subs === minSubs);
+    var goalieSubs = Math.min(...players.map(p => p.goalieSubs));
+    const eligibleGoalies = players.filter(p => p.goalieSubs === goalieSubs && p !== lastGoalie);
+    const goalie = eligibleGoalies[Math.floor(Math.random() * eligibleGoalies.length)];
+
+    var minSubs = Math.min(...players.map(p => p.subs));
+    const shuffledPlayers = players.sort(() => Math.random() - 0.5);
+    const eligiblePlayers = shuffledPlayers.filter(p => p != goalie && p.subs === minSubs);
+    while (eligiblePlayers.length < 4) {
+      ++minSubs;
+      eligiblePlayers.push(...shuffledPlayers.filter(p => p !== goalie && p.subs === minSubs));
+    }
     const subs = eligiblePlayers.slice(0, 4);
     setSuggestedLineup({ goalie, subs });
-    setModalVisible(true);
-    setLastGoalieIndex(nextGoalieIndex);
+    setSuggestModalVisible(true);
+    setLastGoalie(goalie);
   };
 
   const handleConfirmLineup = () => {
@@ -37,7 +44,7 @@ function App() {
       if (i >= 0) newPlayers[i].subs += 1;
     });
     setPlayers(newPlayers);
-    setModalVisible(false);
+    setSuggestModalVisible(false);
   };
 
   return (
@@ -101,7 +108,7 @@ function App() {
         <button onClick={handleSuggestLineup} style={greenButtonStyle}>Suggest</button>
       </div>
 
-      {modalVisible && (
+      {suggestModalVisible && (
         <div style={modalOverlayStyle}>
           <div style={modalContentStyle}>
             <h2>Suggested Lineup</h2>
@@ -110,7 +117,7 @@ function App() {
               <p key={i}>Sub: {sub.firstName} {sub.lastName}</p>
             ))}
             <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
-              <button onClick={() => setModalVisible(false)} style={redButtonStyle}>Decline</button>
+              <button onClick={() => setSuggestModalVisible(false)} style={redButtonStyle}>Decline</button>
               <button style={buttonStyle} onClick={handleConfirmLineup}>Confirm</button>
             </div>
           </div>
