@@ -2,29 +2,29 @@ import React, { useState } from 'react';
 
 function App() {
   const [players, setPlayers] = useState([
-    { firstName: 'Ben', lastName: '', isActive: true, subs: 0, goalieSubs: 0 },
-    { firstName: 'Finn', lastName: '', isActive: true, subs: 0, goalieSubs: 0 },
-    { firstName: 'Penny', lastName: '', isActive: true, subs: 0, goalieSubs: 0 },
-    { firstName: 'Hugh', lastName: '', isActive: true, subs: 0, goalieSubs: 0 },
-    { firstName: 'Emily', lastName: '', isActive: true, subs: 0, goalieSubs: 0 },
-    { firstName: 'Sterling', lastName: '', isActive: true, subs: 0, goalieSubs: 0 },
-    { firstName: 'Casey', lastName: '', isActive: true, subs: 0, goalieSubs: 0 },
-    { firstName: 'Kinley', lastName: '', isActive: true, subs: 0, goalieSubs: 0 }
+    { firstName: 'Ben', lastName: '', isActive: true, inField: false, inGoal: false, subs: 0, goalieSubs: 0 },
+    { firstName: 'Finn', lastName: '', isActive: true, inField: false, inGoal: false, subs: 0, goalieSubs: 0 },
+    { firstName: 'Penny', lastName: '', isActive: true, inField: false, inGoal: false, subs: 0, goalieSubs: 0 },
+    { firstName: 'Hugh', lastName: '', isActive: true, inField: false, inGoal: false, subs: 0, goalieSubs: 0 },
+    { firstName: 'Emily', lastName: '', isActive: true, inField: false, inGoal: false, subs: 0, goalieSubs: 0 },
+    { firstName: 'Sterling', lastName: '', isActive: true, inField: false, inGoal: false, subs: 0, goalieSubs: 0 },
+    { firstName: 'Casey', lastName: '', isActive: true, inField: false, inGoal: false, subs: 0, goalieSubs: 0 },
+    { firstName: 'Kinley', lastName: '', isActive: true, inField: false, inGoal: false, subs: 0, goalieSubs: 0 }
   ]);
 
   const [playerCount, setPlayerCount] = useState(5);
   const [suggestModalVisible, setSuggestModalVisible] = useState(false);
   const [resetModalVisible, setResetModalVisible] = useState(false);
   const [suggestedLineup, setSuggestedLineup] = useState({ goalie: null, subs: [] });
-  const [lastGoalie, setLastGoalie] = useState();
 
   const handleSuggestLineup = () => {
     const activePlayers = players.filter(p => p.isActive);
     if (activePlayers.length < playerCount) {
       setPlayerCount(activePlayers.length);
     }
+
     var goalieSubs = Math.min(...activePlayers.map(p => p.goalieSubs));
-    const eligibleGoalies = activePlayers.filter(p => p.goalieSubs === goalieSubs && p !== lastGoalie);
+    const eligibleGoalies = activePlayers.filter(p => p.goalieSubs === goalieSubs && !p.inGoal);
     const goalie = eligibleGoalies[Math.floor(Math.random() * eligibleGoalies.length)];
 
     var minSubs = Math.min(...activePlayers.map(p => p.subs));
@@ -37,16 +37,21 @@ function App() {
     const subs = eligiblePlayers.slice(0, playerCount - 1);
     setSuggestedLineup({ goalie, subs });
     setSuggestModalVisible(true);
-    setLastGoalie(goalie);
   };
 
   const handleConfirmLineup = () => {
-    const newPlayers = [...players];
+    const newPlayers = players.map(p => ({ ...p, inField: false, inGoal: false }));
     const goalieIndex = players.indexOf(suggestedLineup.goalie);
-    if (goalieIndex >= 0) newPlayers[goalieIndex].goalieSubs += 1;
+    if (goalieIndex >= 0) {
+      newPlayers[goalieIndex].goalieSubs += 1;
+      newPlayers[goalieIndex].inGoal = true;
+    }
     suggestedLineup.subs.forEach(sub => {
       const i = players.indexOf(sub);
-      if (i >= 0) newPlayers[i].subs += 1;
+      if (i >= 0) {
+        newPlayers[i].subs += 1;
+        newPlayers[i].inField = true;
+      }
     });
     setPlayers(newPlayers);
     setSuggestModalVisible(false);
@@ -55,7 +60,7 @@ function App() {
   return (
     <div style={{ paddingBottom: '80px', textAlign: 'center' }}>
       {[...players].sort((a, b) => (a.isActive === b.isActive) ? 0 : a.isActive ? -1 : 1).map((player, index) => (
-        <div key={index} style={{ borderBottom: '1px solid #ccc', padding: '6px 10px' }}>
+        <div key={index} style={{ borderBottom: '1px solid #ccc', padding: '6px 10px', backgroundColor: player.inField ? '#e0ffe0' : player.inGoal ? 'lightblue' : 'white' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
             <h2 style={{ margin: '0 0 2px 0', fontSize: '1.3rem', display: 'inline' }}>
               {player.firstName} {player.lastName}
@@ -75,7 +80,7 @@ function App() {
             </label>
           </div>
           <p style={{ margin: '0 0 4px 0', fontSize: '0.95rem' }}>
-            Subs: {player.subs}, Goalie Subs: {player.goalieSubs}
+            Subs: {player.subs} | Goalie Subs: {player.goalieSubs} | Total: {player.subs + player.goalieSubs}
           </p>
           <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
             <button onClick={() => {
@@ -136,9 +141,9 @@ function App() {
         <div style={modalOverlayStyle}>
           <div style={modalContentStyle}>
             <h2>Suggested Lineup</h2>
-            <p>Goalie: {suggestedLineup.goalie?.firstName} {suggestedLineup.goalie?.lastName}</p>
+            <p>Goalie: {suggestedLineup.goalie?.firstName} {suggestedLineup.goalie?.lastName} [{suggestedLineup.goalie?.subs + suggestedLineup.goalie?.goalieSubs}]</p>
             {suggestedLineup.subs.map((sub, i) => (
-              <p key={i}>Sub: {sub.firstName} {sub.lastName}</p>
+              <p key={i}>Sub: {sub.firstName} {sub.lastName} [{sub.subs + sub.goalieSubs}]</p>
             ))}
             <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
               <button onClick={() => setSuggestModalVisible(false)} style={redButtonStyle}>Decline</button>
