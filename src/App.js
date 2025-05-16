@@ -142,9 +142,9 @@ function App() {
   );
 }
 
-const buttonStyle = { fontSize: '1rem', padding: '6px 4px' }
-const redButtonStyle = { backgroundColor: 'red', color: 'white', fontSize: '1rem', padding: '6px 4px' }
-const greenButtonStyle = { backgroundColor: 'green', color: 'white', fontSize: '1rem', padding: '6px 4px' }
+const buttonStyle = { fontSize: '1rem', padding: '10px 5px' }
+const redButtonStyle = { backgroundColor: 'red', color: 'white', fontSize: '1rem', padding: '10px 5px' }
+const greenButtonStyle = { backgroundColor: 'green', color: 'white', fontSize: '1rem', padding: '10px 5px' }
 
 const modalOverlayStyle = {
   position: 'fixed',
