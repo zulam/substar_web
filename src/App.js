@@ -2,34 +2,39 @@ import React, { useState } from 'react';
 
 function App() {
   const [players, setPlayers] = useState([
-    { firstName: 'Ben', lastName: '', subs: 0, goalieSubs: 0 },
-    { firstName: 'Finn', lastName: '', subs: 0, goalieSubs: 0 },
-    { firstName: 'Penny', lastName: '', subs: 0, goalieSubs: 0 },
-    { firstName: 'Hugh', lastName: '', subs: 0, goalieSubs: 0 },
-    { firstName: 'Emily', lastName: '', subs: 0, goalieSubs: 0 },
-    { firstName: 'Sterling', lastName: '', subs: 0, goalieSubs: 0 },
-    { firstName: 'Casey', lastName: '', subs: 0, goalieSubs: 0 },
-    { firstName: 'Kinley', lastName: '', subs: 0, goalieSubs: 0 }
+    { firstName: 'Ben', lastName: '', isActive: true, subs: 0, goalieSubs: 0 },
+    { firstName: 'Finn', lastName: '', isActive: true, subs: 0, goalieSubs: 0 },
+    { firstName: 'Penny', lastName: '', isActive: true, subs: 0, goalieSubs: 0 },
+    { firstName: 'Hugh', lastName: '', isActive: true, subs: 0, goalieSubs: 0 },
+    { firstName: 'Emily', lastName: '', isActive: true, subs: 0, goalieSubs: 0 },
+    { firstName: 'Sterling', lastName: '', isActive: true, subs: 0, goalieSubs: 0 },
+    { firstName: 'Casey', lastName: '', isActive: true, subs: 0, goalieSubs: 0 },
+    { firstName: 'Kinley', lastName: '', isActive: true, subs: 0, goalieSubs: 0 }
   ]);
 
+  const [playerCount, setPlayerCount] = useState(5);
   const [suggestModalVisible, setSuggestModalVisible] = useState(false);
   const [resetModalVisible, setResetModalVisible] = useState(false);
   const [suggestedLineup, setSuggestedLineup] = useState({ goalie: null, subs: [] });
   const [lastGoalie, setLastGoalie] = useState();
 
   const handleSuggestLineup = () => {
-    var goalieSubs = Math.min(...players.map(p => p.goalieSubs));
-    const eligibleGoalies = players.filter(p => p.goalieSubs === goalieSubs && p !== lastGoalie);
+    const activePlayers = players.filter(p => p.isActive);
+    if (activePlayers.length < playerCount) {
+      setPlayerCount(activePlayers.length);
+    }
+    var goalieSubs = Math.min(...activePlayers.map(p => p.goalieSubs));
+    const eligibleGoalies = activePlayers.filter(p => p.goalieSubs === goalieSubs && p !== lastGoalie);
     const goalie = eligibleGoalies[Math.floor(Math.random() * eligibleGoalies.length)];
 
-    var minSubs = Math.min(...players.map(p => p.subs));
-    const shuffledPlayers = players.sort(() => Math.random() - 0.5);
-    const eligiblePlayers = shuffledPlayers.filter(p => p != goalie && p.subs === minSubs);
-    while (eligiblePlayers.length < 4) {
+    var minSubs = Math.min(...activePlayers.map(p => p.subs));
+    var shuffledPlayers = [...activePlayers].sort(() => Math.random() - 0.5);
+    const eligiblePlayers = shuffledPlayers.filter(p => p !== goalie && p.subs === minSubs);
+    while (eligiblePlayers.length < playerCount - 1) {
       ++minSubs;
       eligiblePlayers.push(...shuffledPlayers.filter(p => p !== goalie && p.subs === minSubs));
     }
-    const subs = eligiblePlayers.slice(0, 4);
+    const subs = eligiblePlayers.slice(0, playerCount - 1);
     setSuggestedLineup({ goalie, subs });
     setSuggestModalVisible(true);
     setLastGoalie(goalie);
@@ -49,10 +54,29 @@ function App() {
 
   return (
     <div style={{ paddingBottom: '80px', textAlign: 'center' }}>
-      {players.map((player, index) => (
+      {[...players].sort((a, b) => (a.isActive === b.isActive) ? 0 : a.isActive ? -1 : 1).map((player, index) => (
         <div key={index} style={{ borderBottom: '1px solid #ccc', padding: '6px 10px' }}>
-          <h2 style={{ margin: '0 0 2px 0', fontSize: '1.3rem' }}>{player.firstName} {player.lastName}</h2>
-          <p style={{ margin: '0 0 4px 0', fontSize: '0.95rem' }}>Subs: {player.subs}, Goalie Subs: {player.goalieSubs}</p>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+            <h2 style={{ margin: '0 0 2px 0', fontSize: '1.3rem', display: 'inline' }}>
+              {player.firstName} {player.lastName}
+            </h2>
+            <label style={{ fontSize: '0.95rem', display: 'flex', alignItems: 'center', gap: '2px' }}>
+              <input
+                type="checkbox"
+                checked={player.isActive}
+                onChange={e => {
+                  const newPlayers = [...players];
+                  const realIndex = players.findIndex(p => p.firstName === player.firstName && p.lastName === player.lastName);
+                  newPlayers[realIndex].isActive = !!e.target.checked;
+                  setPlayers(newPlayers);
+                }}
+              />
+              Active
+            </label>
+          </div>
+          <p style={{ margin: '0 0 4px 0', fontSize: '0.95rem' }}>
+            Subs: {player.subs}, Goalie Subs: {player.goalieSubs}
+          </p>
           <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
             <button onClick={() => {
               const newPlayers = [...players];
