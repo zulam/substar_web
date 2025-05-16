@@ -41,33 +41,38 @@ function App() {
   };
 
   return (
-    <div style={{ paddingBottom: '80px' }}>
+    <div style={{ paddingBottom: '80px', textAlign: 'center' }}>
       <h1 style={{ textAlign: 'center' }}>Substitution Tracker</h1>
       {players.map((player, index) => (
         <div key={index} style={{ borderBottom: '1px solid #ccc', padding: '10px 20px' }}>
-          <h2>{player.firstName} {player.lastName}</h2>
+          <h2 style={{ margin: '0px' }}>{player.firstName} {player.lastName}</h2>
           <p>Subs: {player.subs}, Goalie Subs: {player.goalieSubs}</p>
-          <div style={{ display: 'flex', gap: '8px' }}>
+          <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
             <button onClick={() => {
               const newPlayers = [...players];
               if (newPlayers[index].subs > 0) newPlayers[index].subs -= 1;
               setPlayers(newPlayers);
-            }} style={{ backgroundColor: 'red', color: 'white' }}>- Sub</button>
-            <button onClick={() => {
-              const newPlayers = [...players];
-              newPlayers[index].subs += 1;
-              setPlayers(newPlayers);
-            }}>+ Sub</button>
+            }} style={redButtonStyle}>- Sub</button>
+            <button
+              onClick={() => {
+                const newPlayers = [...players];
+                newPlayers[index].subs += 1;
+                setPlayers(newPlayers);
+              }}
+              style={buttonStyle}>
+              + Sub
+            </button>
             <button onClick={() => {
               const newPlayers = [...players];
               if (newPlayers[index].goalieSubs > 0) newPlayers[index].goalieSubs -= 1;
               setPlayers(newPlayers);
-            }} style={{ backgroundColor: 'red', color: 'white' }}>- Goalie</button>
+            }} style={redButtonStyle}>- Goalie</button>
             <button onClick={() => {
               const newPlayers = [...players];
               newPlayers[index].goalieSubs += 1;
               setPlayers(newPlayers);
-            }}>+ Goalie</button>
+            }}
+              style={buttonStyle}>+ Goalie</button>
           </div>
         </div>
       ))}
@@ -77,22 +82,24 @@ function App() {
         bottom: 0,
         left: 0,
         right: 0,
-        backgroundColor: '#fff',
+        backgroundColor: 'lightgray',
         borderTop: '1px solid #ccc',
         padding: '10px',
         display: 'flex',
         justifyContent: 'space-around'
       }}>
-        <button onClick={() => {
-          setPlayers([...players, { firstName: 'New', lastName: 'Player', subs: 0, goalieSubs: 0 }]);
-        }}>+ Player</button>
-        <button onClick={() => {
-          const newPlayers = [...players];
-          newPlayers.pop();
-          setPlayers(newPlayers);
-        }} style={{ backgroundColor: 'red', color: 'white' }}>- Last Player</button>
-        <button onClick={handleSuggestLineup} style={{ backgroundColor: 'green', color: 'white' }}>Suggest</button>
-        <button onClick={() => setResetModalVisible(true)} style={{ backgroundColor: 'orange', color: 'white' }}>Reset</button>
+        {false && <>
+          <button onClick={() => {
+            setPlayers([...players, { firstName: 'New', lastName: 'Player', subs: 0, goalieSubs: 0 }]);
+          }}>+ Player</button>
+          <button onClick={() => {
+            const newPlayers = [...players];
+            newPlayers.pop();
+            setPlayers(newPlayers);
+          }} style={{ backgroundColor: 'red', color: 'white' }}>- Last Player</button>
+        </>}
+        <button onClick={handleSuggestLineup} style={greenButtonStyle}>Suggest</button>
+        <button onClick={() => setResetModalVisible(true)} style={redButtonStyle}>Reset</button>
       </div>
 
       {modalVisible && (
@@ -104,8 +111,8 @@ function App() {
               <p key={i}>Sub: {sub.firstName} {sub.lastName}</p>
             ))}
             <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
-              <button onClick={() => setModalVisible(false)} style={{ backgroundColor: 'red', color: 'white' }}>Decline</button>
-              <button onClick={handleConfirmLineup}>Confirm</button>
+              <button onClick={() => setModalVisible(false)} style={redButtonStyle}>Decline</button>
+              <button style={buttonStyle} onClick={handleConfirmLineup}>Confirm</button>
             </div>
           </div>
         </div>
@@ -117,7 +124,7 @@ function App() {
             <h2>Confirm Reset</h2>
             <p>Are you sure you want to reset all lineups?</p>
             <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
-              <button onClick={() => setResetModalVisible(false)} style={{ backgroundColor: 'red', color: 'white' }}>Cancel</button>
+              <button onClick={() => setResetModalVisible(false)} style={redButtonStyle}>Cancel</button>
               <button onClick={() => {
                 setPlayers(players.map(p => ({
                   ...p,
@@ -125,7 +132,8 @@ function App() {
                   goalieSubs: 0
                 })));
                 setResetModalVisible(false);
-              }}>Confirm</button>
+              }}
+              style={buttonStyle}>Confirm</button>
             </div>
           </div>
         </div>
@@ -133,6 +141,10 @@ function App() {
     </div>
   );
 }
+
+const buttonStyle = { fontSize: '1rem', padding: '6px 12px' }
+const redButtonStyle = { backgroundColor: 'red', color: 'white', fontSize: '1rem', padding: '6px 12px' }
+const greenButtonStyle = { backgroundColor: 'green', color: 'white', fontSize: '1rem', padding: '6px 12px' }
 
 const modalOverlayStyle = {
   position: 'fixed',
