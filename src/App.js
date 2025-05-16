@@ -44,7 +44,7 @@ function App() {
     <div style={{ paddingBottom: '80px', textAlign: 'center' }}>
       {players.map((player, index) => (
         <div key={index} style={{ borderBottom: '1px solid #ccc', padding: '6px 10px' }}>
-          <h2 style={{ margin: '0 0 2px 0', fontSize: '1.3rem'}}>{player.firstName} {player.lastName}</h2>
+          <h2 style={{ margin: '0 0 2px 0', fontSize: '1.3rem' }}>{player.firstName} {player.lastName}</h2>
           <p style={{ margin: '0 0 4px 0', fontSize: '0.95rem' }}>Subs: {player.subs}, Goalie Subs: {player.goalieSubs}</p>
           <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
             <button onClick={() => {
@@ -97,8 +97,8 @@ function App() {
             setPlayers(newPlayers);
           }} style={{ backgroundColor: 'red', color: 'white' }}>- Last Player</button>
         </>}
-        <button onClick={handleSuggestLineup} style={greenButtonStyle}>Suggest</button>
         <button onClick={() => setResetModalVisible(true)} style={redButtonStyle}>Reset</button>
+        <button onClick={handleSuggestLineup} style={greenButtonStyle}>Suggest</button>
       </div>
 
       {modalVisible && (
@@ -132,7 +132,7 @@ function App() {
                 })));
                 setResetModalVisible(false);
               }}
-              style={buttonStyle}>Confirm</button>
+                style={buttonStyle}>Confirm</button>
             </div>
           </div>
         </div>
