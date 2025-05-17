@@ -80,12 +80,12 @@ function App() {
     setSuggestModalVisible(false);
   };
 
-  const suggestReplacement = (player, players, playerCount) => {
-    const inactivePlayers = players.filter(p => p.isActive && !p.inField && !p.inGoal && p !== player);
-    if (inactivePlayers.length === 0) return null;
+  const suggestReplacement = (player, players) => {
+    const potentialReplacements = players.filter(p => p.isActive && !p.inField && !p.inGoal && p !== player);
+    if (potentialReplacements.length === 0) return null;
 
-    const minTotal = Math.min(...inactivePlayers.map(p => p.subs + p.goalieSubs));
-    const eligible = inactivePlayers.filter(p => (p.subs + p.goalieSubs) === minTotal);
+    const minTotal = Math.min(...potentialReplacements.map(p => p.subs + p.goalieSubs));
+    const eligible = potentialReplacements.filter(p => (p.subs + p.goalieSubs) === minTotal);
     return eligible[Math.floor(Math.random() * eligible.length)];
   };
 
@@ -104,7 +104,7 @@ function App() {
                 onChange={e => {
                   const isChecked = !!e.target.checked;
                   if (!isChecked && (player.inField || player.inGoal)) {
-                    const replacement = suggestReplacement(player, players, playerCount);
+                    const replacement = suggestReplacement(player, players);
                     setPlayerToDeactivate(player);
                     setReplacementPlayer(replacement);
                     setDeactivationModalVisible(true);
