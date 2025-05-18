@@ -2,14 +2,14 @@ import React, { useState } from 'react';
 
 function App() {
   const origPlayers = [
-    { firstName: 'Ben', lastName: '', isActive: true, inField: false, inGoal: false, subs: 0, goalieSubs: 0 },
-    { firstName: 'Finn', lastName: '', isActive: true, inField: false, inGoal: false, subs: 0, goalieSubs: 0 },
-    { firstName: 'Penny', lastName: '', isActive: true, inField: false, inGoal: false, subs: 0, goalieSubs: 0 },
-    { firstName: 'Hugh', lastName: '', isActive: true, inField: false, inGoal: false, subs: 0, goalieSubs: 0 },
-    { firstName: 'Emily', lastName: '', isActive: true, inField: false, inGoal: false, subs: 0, goalieSubs: 0 },
-    { firstName: 'Sterling', lastName: '', isActive: true, inField: false, inGoal: false, subs: 0, goalieSubs: 0 },
-    { firstName: 'Casey', lastName: '', isActive: true, inField: false, inGoal: false, subs: 0, goalieSubs: 0 },
-    { firstName: 'Kinley', lastName: '', isActive: true, inField: false, inGoal: false, subs: 0, goalieSubs: 0 }
+    { firstName: 'Ben', lastName: '', isActive: true, inField: false, inGoal: false, subs: 0, goalieSubs: 0, consecutiveSubs: 0 },
+    { firstName: 'Finn', lastName: '', isActive: true, inField: false, inGoal: false, subs: 0, goalieSubs: 0, consecutiveSubs: 0 },
+    { firstName: 'Penny', lastName: '', isActive: true, inField: false, inGoal: false, subs: 0, goalieSubs: 0, consecutiveSubs: 0 },
+    { firstName: 'Hugh', lastName: '', isActive: true, inField: false, inGoal: false, subs: 0, goalieSubs: 0, consecutiveSubs: 0 },
+    { firstName: 'Emily', lastName: '', isActive: true, inField: false, inGoal: false, subs: 0, goalieSubs: 0, consecutiveSubs: 0 },
+    { firstName: 'Sterling', lastName: '', isActive: true, inField: false, inGoal: false, subs: 0, goalieSubs: 0, consecutiveSubs: 0 },
+    { firstName: 'Casey', lastName: '', isActive: true, inField: false, inGoal: false, subs: 0, goalieSubs: 0, consecutiveSubs: 0 },
+    { firstName: 'Kinley', lastName: '', isActive: true, inField: false, inGoal: false, subs: 0, goalieSubs: 0, consecutiveSubs: 0 }
   ]
 
   const [players, setPlayers] = useState([...origPlayers]);
@@ -30,33 +30,40 @@ function App() {
 
     // 1. Determine the goalie as before
     var goalieSubs = Math.min(...activePlayers.map(p => p.goalieSubs));
-    const eligibleGoalies = activePlayers.filter(p => p.goalieSubs === goalieSubs && !p.inGoal);
-    const goalie = eligibleGoalies[Math.floor(Math.random() * eligibleGoalies.length)];
+    const eligibleGoalies = activePlayers
+      .filter(p => p.goalieSubs === goalieSubs && !p.inGoal);
+
+    // Now, among eligibleGoalies, pick those with the fewest consecutiveSubs
+    const minGoalieConsec = Math.min(...eligibleGoalies.map(p => p.consecutiveSubs));
+    const mostEligibleGoalies = eligibleGoalies.filter(p => p.consecutiveSubs === minGoalieConsec);
+
+    // Randomly pick from the most eligible
+    const goalie = mostEligibleGoalies[Math.floor(Math.random() * mostEligibleGoalies.length)];
 
     // 2. Add players currently on the bench (not inField, not inGoal, not the goalie)
     const benchPlayers = activePlayers.filter(
       p => !p.inField && !p.inGoal && p !== goalie
     );
 
-    // 3. Fill remaining spots with lowest subs, excluding goalie and already added bench players
-    var minSubs = Math.min(...activePlayers.map(p => p.subs));
-    var shuffledPlayers = [...activePlayers].sort(() => Math.random() - 0.5);
-    let eligiblePlayers = shuffledPlayers.filter(
-      p => p !== goalie && !benchPlayers.includes(p) && p.subs === minSubs
+    // 3. Fill remaining spots, favoring players with fewer consecutiveSubs, then fewer subs
+    // Exclude goalie and already added bench players
+    let candidates = activePlayers.filter(
+      p => p !== goalie && !benchPlayers.includes(p)
     );
 
-    // Add more players if needed
-    while (benchPlayers.length + eligiblePlayers.length < playerCount - 1) {
-      ++minSubs;
-      eligiblePlayers.push(
-        ...shuffledPlayers.filter(
-          p => p !== goalie && !benchPlayers.includes(p) && p.subs === minSubs && !eligiblePlayers.includes(p)
-        )
-      );
-    }
+    // Sort by consecutiveSubs, then subs, then random for fairness
+    candidates.sort((a, b) => {
+      if (a.consecutiveSubs !== b.consecutiveSubs) {
+        return a.consecutiveSubs - b.consecutiveSubs;
+      }
+      if (a.subs !== b.subs) {
+        return a.subs - b.subs;
+      }
+      return Math.random() - 0.5;
+    });
 
-    // 4. Combine bench players and eligible players, then slice to required count
-    const subs = [...benchPlayers, ...eligiblePlayers].slice(0, playerCount - 1);
+    // 4. Combine bench players and sorted candidates, then slice to required count
+    const subs = [...benchPlayers, ...candidates].slice(0, playerCount - 1);
 
     setSuggestedLineup({ goalie, subs });
     setSuggestModalVisible(true);
@@ -67,6 +74,7 @@ function App() {
     const goalieIndex = players.indexOf(suggestedLineup.goalie);
     if (goalieIndex >= 0) {
       newPlayers[goalieIndex].goalieSubs += 1;
+      newPlayers[goalieIndex].consecutiveSubs += 1;
       newPlayers[goalieIndex].inGoal = true;
     }
     suggestedLineup.subs.forEach(sub => {
@@ -74,6 +82,13 @@ function App() {
       if (i >= 0) {
         newPlayers[i].subs += 1;
         newPlayers[i].inField = true;
+        newPlayers[i].consecutiveSubs += 1;
+      }
+    });
+    // Reset consecutive subs for all other players
+    newPlayers.forEach((p, i) => {
+      if (!p.inField && !p.inGoal) {
+        newPlayers[i].consecutiveSubs = 0;
       }
     });
     setPlayers(newPlayers);
@@ -120,7 +135,7 @@ function App() {
             </label>
           </div>
           <p style={{ margin: '0 0 4px 0', fontSize: '0.95rem' }}>
-            Subs: {player.subs} | Goalie Subs: {player.goalieSubs} | Total: {player.subs + player.goalieSubs}
+            Field: {player.subs} | Goalie: {player.goalieSubs} | Total: {player.subs + player.goalieSubs} | Consec: {player.consecutiveSubs}
           </p>
           {false &&
             <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
@@ -183,9 +198,10 @@ function App() {
         <div style={modalOverlayStyle}>
           <div style={modalContentStyle}>
             <h2>Suggested Lineup</h2>
-            <p>Goalie: {suggestedLineup.goalie?.firstName} {suggestedLineup.goalie?.lastName} [{suggestedLineup.goalie?.subs + suggestedLineup.goalie?.goalieSubs}]</p>
+            <h5 style={{ padding: '0px', margin: '0px' }}>Name [# Consec. Subs]</h5>
+            <p>Goalie: {suggestedLineup.goalie?.firstName} {suggestedLineup.goalie?.lastName} [{suggestedLineup.goalie?.consecutiveSubs}]</p>
             {suggestedLineup.subs.map((sub, i) => (
-              <p key={i}>{sub.firstName} {sub.lastName} [{sub.subs + sub.goalieSubs}]</p>
+              <p key={i}>{sub.firstName} {sub.lastName} [{sub.consecutiveSubs}]</p>
             ))}
             <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
               <button onClick={() => setSuggestModalVisible(false)} style={redButtonStyle}>Decline</button>
@@ -231,10 +247,12 @@ function App() {
                   if (playerToDeactivate.inField) {
                     newPlayers[replacementIdx].inField = true;
                     newPlayers[replacementIdx].subs += 1;
+                    newPlayers[replacementIdx].consecutiveSubs += 1;
                   }
                   else if (playerToDeactivate.inGoal) {
                     newPlayers[replacementIdx].inGoal = true;
                     newPlayers[replacementIdx].goalieSubs += 1;
+                    newPlayers[replacementIdx].consecutiveSubs += 1;
                   }
                 }
 
@@ -242,6 +260,7 @@ function App() {
                   newPlayers[deactivateIdx].isActive = false;
                   newPlayers[deactivateIdx].inField = false;
                   newPlayers[deactivateIdx].inGoal = false;
+                  newPlayers[replacementIdx].consecutiveSubs = 0;
                 }
 
                 setPlayers(newPlayers);
