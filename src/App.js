@@ -17,10 +17,8 @@ function App() {
   const [suggestModalVisible, setSuggestModalVisible] = useState(false);
   const [resetModalVisible, setResetModalVisible] = useState(false);
   const [suggestedLineup, setSuggestedLineup] = useState({ goalie: null, subs: [] });
-
-  const [deactivationModalVisible, setDeactivationModalVisible] = useState(false);
+  const [selectSubModalVisible, setSelectSubModalVisible] = useState(false);
   const [playerToDeactivate, setPlayerToDeactivate] = useState(null);
-  const [replacementPlayer, setReplacementPlayer] = useState(null);
 
   const handleSuggestLineup = () => {
     const activePlayers = players.filter(p => p.isActive);
@@ -95,23 +93,34 @@ function App() {
     setSuggestModalVisible(false);
   };
 
-  const suggestReplacement = (player, players) => {
-    const potentialReplacements = players.filter(p => p.isActive && !p.inField && !p.inGoal && p !== player);
-    if (potentialReplacements.length === 0) return null;
-
-    const minTotal = Math.min(...potentialReplacements.map(p => p.subs + p.goalieSubs));
-    const eligible = potentialReplacements.filter(p => (p.subs + p.goalieSubs) === minTotal);
-    return eligible[Math.floor(Math.random() * eligible.length)];
-  };
-
   return (
     <div style={{ paddingBottom: '80px', textAlign: 'center' }}>
-      {[...players].sort((a, b) => (a.isActive === b.isActive) ? 0 : a.isActive ? -1 : 1).map((player, index) => (
-        <div key={index} style={{ borderBottom: '1px solid #ccc', padding: '6px 10px', backgroundColor: player.inField ? '#e0ffe0' : player.inGoal ? 'lightblue' : 'white' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+      {/* In Field or In Goal */}
+      <div style={{ border: '2px solid #4caf50', borderRadius: 8, margin: '16px auto 8px auto', maxWidth: 500, padding: 8 }}>
+        <h3 style={{ margin: '4px 0' }}>On Field / In Goal</h3>
+        {players.filter(p => p.isActive && (p.inField || p.inGoal)).length === 0 && (
+          <div style={{ color: '#888', fontStyle: 'italic' }}>No players on field or in goal</div>
+        )}
+        {players.filter(p => p.isActive && (p.inField || p.inGoal)).map((player, index) => (
+          <div key={player.firstName + player.lastName}
+            style={{
+              borderBottom: '1px solid #ccc',
+              padding: '6px 10px',
+              backgroundColor: player.inGoal ? 'lightblue' : '#e0ffe0',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '8px'
+            }}>
             <h2 style={{ margin: '0 0 2px 0', fontSize: '1.3rem', display: 'inline' }}>
               {player.firstName} {player.lastName}
             </h2>
+            <span style={{ fontSize: '0.95rem' }}>
+              {player.inGoal ? 'Goalie' : 'Field'}
+            </span>
+            <span style={{ fontSize: '0.95rem', marginRight: 8 }}>
+              [G: {player.goalieSubs} | F: {player.subs} | T: {player.goalieSubs + player.subs} | C: {player.consecutiveSubs}]
+            </span>
             <label style={{ fontSize: '0.95rem', display: 'flex', alignItems: 'center', gap: '2px' }}>
               <input
                 type="checkbox"
@@ -119,10 +128,8 @@ function App() {
                 onChange={e => {
                   const isChecked = !!e.target.checked;
                   if (!isChecked && (player.inField || player.inGoal)) {
-                    const replacement = suggestReplacement(player, players);
                     setPlayerToDeactivate(player);
-                    setReplacementPlayer(replacement);
-                    setDeactivationModalVisible(true);
+                    setSelectSubModalVisible(true);
                   } else {
                     const newPlayers = [...players];
                     const realIndex = players.findIndex(p => p.firstName === player.firstName && p.lastName === player.lastName);
@@ -134,40 +141,100 @@ function App() {
               Active
             </label>
           </div>
-          <p style={{ margin: '0 0 4px 0', fontSize: '0.95rem' }}>
-            Field: {player.subs} | Goalie: {player.goalieSubs} | Total: {player.subs + player.goalieSubs} | Consec: {player.consecutiveSubs}
-          </p>
-          {false &&
-            <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
-              <button onClick={() => {
-                const newPlayers = [...players];
-                if (newPlayers[index].subs > 0) newPlayers[index].subs -= 1;
-                setPlayers(newPlayers);
-              }} style={redButtonStyle}>- Sub</button>
-              <button
-                onClick={() => {
-                  const newPlayers = [...players];
-                  newPlayers[index].subs += 1;
-                  setPlayers(newPlayers);
+        ))}
+      </div>
+
+      {/* Active Bench */}
+      <div style={{ border: '2px solid #2196f3', borderRadius: 8, margin: '8px auto', maxWidth: 500, padding: 8 }}>
+        <h3 style={{ margin: '4px 0' }}>Bench (Active)</h3>
+        {players.filter(p => p.isActive && !p.inField && !p.inGoal).length === 0 && (
+          <div style={{ color: '#888', fontStyle: 'italic' }}>No active players on bench</div>
+        )}
+        {players.filter(p => p.isActive && !p.inField && !p.inGoal).map((player, index) => (
+          <div key={player.firstName + player.lastName}
+            style={{
+              borderBottom: '1px solid #ccc',
+              padding: '6px 10px',
+              backgroundColor: 'white',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '8px'
+            }}>
+            <h2 style={{ margin: '0 0 2px 0', fontSize: '1.3rem', display: 'inline' }}>
+              {player.firstName} {player.lastName}
+            </h2>
+            <span style={{ fontSize: '0.95rem', marginRight: 8 }}>
+              [G: {player.goalieSubs} | F: {player.subs} | T: {player.goalieSubs + player.subs} | C: {player.consecutiveSubs}]
+            </span>
+            <label style={{ fontSize: '0.95rem', display: 'flex', alignItems: 'center', gap: '2px' }}>
+              <input
+                type="checkbox"
+                checked={player.isActive}
+                onChange={e => {
+                  const isChecked = !!e.target.checked;
+                  if (!isChecked && (player.inField || player.inGoal)) {
+                    setPlayerToDeactivate(player);
+                    setSelectSubModalVisible(true);
+                  } else {
+                    const newPlayers = [...players];
+                    const realIndex = players.findIndex(p => p.firstName === player.firstName && p.lastName === player.lastName);
+                    newPlayers[realIndex].isActive = isChecked;
+                    setPlayers(newPlayers);
+                  }
                 }}
-                style={buttonStyle}>
-                + Sub
-              </button>
-              <button onClick={() => {
-                const newPlayers = [...players];
-                if (newPlayers[index].goalieSubs > 0) newPlayers[index].goalieSubs -= 1;
-                setPlayers(newPlayers);
-              }} style={redButtonStyle}>- Goalie</button>
-              <button onClick={() => {
-                const newPlayers = [...players];
-                newPlayers[index].goalieSubs += 1;
-                setPlayers(newPlayers);
-              }}
-                style={buttonStyle}>+ Goalie</button>
-            </div>
-          }
-        </div>
-      ))}
+              />
+              Active
+            </label>
+          </div>
+        ))}
+      </div>
+
+      {/* Inactive */}
+      <div style={{ border: '2px solid #aaa', borderRadius: 8, margin: '8px auto', maxWidth: 500, padding: 8 }}>
+        <h3 style={{ margin: '4px 0' }}>Inactive Players</h3>
+        {players.filter(p => !p.isActive).length === 0 && (
+          <div style={{ color: '#888', fontStyle: 'italic' }}>No inactive players</div>
+        )}
+        {players.filter(p => !p.isActive).map((player, index) => (
+          <div key={player.firstName + player.lastName}
+            style={{
+              borderBottom: '1px solid #ccc',
+              padding: '6px 10px',
+              backgroundColor: '#f8f8f8',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '8px'
+            }}>
+            <h2 style={{ margin: '0 0 2px 0', fontSize: '1.3rem', display: 'inline' }}>
+              {player.firstName} {player.lastName}
+            </h2>
+            <span style={{ fontSize: '0.95rem', marginRight: 8 }}>
+              [G: {player.goalieSubs} | F: {player.subs} | T: {player.goalieSubs + player.subs} | C: {player.consecutiveSubs}]
+            </span>
+            <label style={{ fontSize: '0.95rem', display: 'flex', alignItems: 'center', gap: '2px' }}>
+              <input
+                type="checkbox"
+                checked={player.isActive}
+                onChange={e => {
+                  const isChecked = !!e.target.checked;
+                  if (!isChecked && (player.inField || player.inGoal)) {
+                    setPlayerToDeactivate(player);
+                    setSelectSubModalVisible(true);
+                  } else {
+                    const newPlayers = [...players];
+                    const realIndex = players.findIndex(p => p.firstName === player.firstName && p.lastName === player.lastName);
+                    newPlayers[realIndex].isActive = isChecked;
+                    setPlayers(newPlayers);
+                  }
+                }}
+              />
+              Active
+            </label>
+          </div>
+        ))}
+      </div>
 
       <div style={{
         position: 'fixed',
@@ -194,86 +261,120 @@ function App() {
         <button onClick={handleSuggestLineup} style={greenButtonStyle}>Suggest</button>
       </div>
 
-      {suggestModalVisible && (
-        <div style={modalOverlayStyle}>
-          <div style={modalContentStyle}>
-            <h2>Suggested Lineup</h2>
-            <h5 style={{ padding: '0px', margin: '0px' }}>Name [# Consec. Subs]</h5>
-            <p>Goalie: {suggestedLineup.goalie?.firstName} {suggestedLineup.goalie?.lastName} [{suggestedLineup.goalie?.consecutiveSubs}]</p>
-            {suggestedLineup.subs.map((sub, i) => (
-              <p key={i}>{sub.firstName} {sub.lastName} [{sub.consecutiveSubs}]</p>
-            ))}
-            <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
-              <button onClick={() => setSuggestModalVisible(false)} style={redButtonStyle}>Decline</button>
-              <button style={buttonStyle} onClick={handleConfirmLineup}>Confirm</button>
+      {
+        suggestModalVisible && (
+          <div style={modalOverlayStyle}>
+            <div style={modalContentStyle}>
+              <h2>Suggested Lineup</h2>
+              <h5 style={{ padding: '0px', margin: '0px' }}>Name [# Consec. Subs]</h5>
+              <p>Goalie: {suggestedLineup.goalie?.firstName} {suggestedLineup.goalie?.lastName} [{suggestedLineup.goalie?.consecutiveSubs}]</p>
+              {suggestedLineup.subs.map((sub, i) => (
+                <p key={i}>{sub.firstName} {sub.lastName} [{sub.consecutiveSubs}]</p>
+              ))}
+              <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
+                <button onClick={() => setSuggestModalVisible(false)} style={redButtonStyle}>Decline</button>
+                <button style={buttonStyle} onClick={handleConfirmLineup}>Confirm</button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )
+      }
 
-      {resetModalVisible && (
-        <div style={modalOverlayStyle}>
-          <div style={modalContentStyle}>
-            <h2>Confirm Reset</h2>
-            <p>Are you sure you want to reset all lineups?</p>
-            <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
-              <button onClick={() => setResetModalVisible(false)} style={redButtonStyle}>Cancel</button>
-              <button onClick={() => {
-                setPlayers([...origPlayers]);
-                setPlayerCount(5);
-                setResetModalVisible(false);
-              }}
-                style={buttonStyle}>Confirm</button>
+      {
+        resetModalVisible && (
+          <div style={modalOverlayStyle}>
+            <div style={modalContentStyle}>
+              <h2>Confirm Reset</h2>
+              <p>Are you sure you want to reset all lineups?</p>
+              <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
+                <button onClick={() => setResetModalVisible(false)} style={redButtonStyle}>Cancel</button>
+                <button onClick={() => {
+                  setPlayers([...origPlayers]);
+                  setPlayerCount(5);
+                  setResetModalVisible(false);
+                }}
+                  style={buttonStyle}>Confirm</button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )
+      }
 
-      {deactivationModalVisible && (
-        <div style={modalOverlayStyle}>
-          <div style={modalContentStyle}>
-            <h2>Confirm Deactivation</h2>
-            <p>
-              Deactivate <strong>{playerToDeactivate?.firstName}</strong> and sub in <strong>{replacementPlayer?.firstName}</strong>?
-            </p>
-            <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
-              <button onClick={() => setDeactivationModalVisible(false)} style={redButtonStyle}>Cancel</button>
-              <button onClick={() => {
-                const newPlayers = [...players];
-                const deactivateIdx = players.findIndex(p => p === playerToDeactivate);
-                const replacementIdx = players.findIndex(p => p === replacementPlayer);
+      {
+        selectSubModalVisible && playerToDeactivate && (
+          <div style={modalOverlayStyle}>
+            <div style={modalContentStyle}>
+              <h2>Select Replacement</h2>
+              <p>
+                Deactivate <strong>{playerToDeactivate.firstName}</strong> and sub in:
+              </p>
+              <div style={{ maxHeight: 250, overflowY: 'auto', marginBottom: 16 }}>
+                {players.filter(p => p.isActive && !p.inField && !p.inGoal).length === 0 && (
+                  <div style={{ color: '#888', fontStyle: 'italic' }}>No active bench players available</div>
+                )}
+                {players.filter(p => p.isActive && !p.inField && !p.inGoal).map((bench, i) => (
+                  <div key={bench.firstName + bench.lastName}
+                    style={{
+                      borderBottom: '1px solid #ccc',
+                      padding: '6px 10px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      gap: '8px'
+                    }}>
+                    <span>
+                      {bench.firstName} {bench.lastName}
+                      <span style={{ fontSize: '0.95rem', marginLeft: 8 }}>
+                        [G: {bench.goalieSubs} | F: {bench.subs}]
+                      </span>
+                    </span>
+                    <button
+                      style={buttonStyle}
+                      onClick={() => {
+                        const newPlayers = [...players];
+                        const deactivateIdx = players.findIndex(p => p === playerToDeactivate);
+                        const replacementIdx = players.findIndex(p => p === bench);
 
-                if (replacementIdx >= 0) {
-                  if (playerToDeactivate.inField) {
-                    newPlayers[replacementIdx].inField = true;
-                    newPlayers[replacementIdx].subs += 1;
-                    newPlayers[replacementIdx].consecutiveSubs += 1;
-                  }
-                  else if (playerToDeactivate.inGoal) {
-                    newPlayers[replacementIdx].inGoal = true;
-                    newPlayers[replacementIdx].goalieSubs += 1;
-                    newPlayers[replacementIdx].consecutiveSubs += 1;
-                  }
-                }
+                        if (replacementIdx >= 0) {
+                          if (playerToDeactivate.inField) {
+                            newPlayers[replacementIdx].inField = true;
+                            newPlayers[replacementIdx].subs += 1;
+                            newPlayers[replacementIdx].consecutiveSubs += 1;
+                          }
+                          else if (playerToDeactivate.inGoal) {
+                            newPlayers[replacementIdx].inGoal = true;
+                            newPlayers[replacementIdx].goalieSubs += 1;
+                            newPlayers[replacementIdx].consecutiveSubs += 1;
+                          }
+                        }
 
-                if (deactivateIdx >= 0) {
-                  newPlayers[deactivateIdx].isActive = false;
-                  newPlayers[deactivateIdx].inField = false;
-                  newPlayers[deactivateIdx].inGoal = false;
-                  newPlayers[replacementIdx].consecutiveSubs = 0;
-                }
+                        if (deactivateIdx >= 0) {
+                          newPlayers[deactivateIdx].isActive = false;
+                          newPlayers[deactivateIdx].inField = false;
+                          newPlayers[deactivateIdx].inGoal = false;
+                          newPlayers[replacementIdx].consecutiveSubs = 0;
+                        }
 
-                setPlayers(newPlayers);
-                setDeactivationModalVisible(false);
-                setPlayerToDeactivate(null);
-                setReplacementPlayer(null);
-              }} style={buttonStyle}>Confirm</button>
+                        setPlayers(newPlayers);
+                        setSelectSubModalVisible(false);
+                        setPlayerToDeactivate(null);
+                      }}
+                    >Select</button>
+                  </div>
+                ))}
+              </div>
+              <button
+                style={redButtonStyle}
+                onClick={() => {
+                  setSelectSubModalVisible(false);
+                  setPlayerToDeactivate(null);
+                }}
+              >Cancel</button>
             </div>
           </div>
-        </div>
-      )}
-
-    </div>
+        )
+      }
+    </div >
   );
 }
 
